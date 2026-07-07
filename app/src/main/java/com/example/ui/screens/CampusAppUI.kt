@@ -122,7 +122,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CampusBackgroundDark),
+            .background(CampusBackground),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -136,27 +136,27 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 modifier = Modifier
                     .size(160.dp)
                     .clip(RoundedCornerShape(32.dp))
-                    .border(2.dp, CampusSecondaryDark, RoundedCornerShape(32.dp)),
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(32.dp)),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "CAMPUS ERP",
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                color = CampusPrimary,
                 letterSpacing = 4.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Your All-in-One Digital Campus Portal",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.6f),
+                color = Color.Gray,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(48.dp))
             CircularProgressIndicator(
-                color = CampusSecondaryDark,
+                color = CampusSecondary,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(36.dp)
             )
@@ -179,21 +179,18 @@ fun LoginScreen(viewModel: CampusViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(CampusPrimary, CampusBackground)
-                )
-            ),
+            .background(CampusBackground),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp)
+                .padding(24.dp)
                 .align(Alignment.Center),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -350,68 +347,242 @@ fun LoginScreen(viewModel: CampusViewModel) {
 fun MainDashboardContainer(viewModel: CampusViewModel) {
     var activeTab by remember { mutableStateOf(DashboardTab.Home) }
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
+            if (activeTab == DashboardTab.Home) {
+                // Custom welcome header bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.School,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(AccentIndigoGradientStart, AccentIndigoGradientEnd)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "AS",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "WELCOME BACK",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.Gray,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = profile?.name ?: "Aarav Sharma",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = CampusPrimary
+                            )
+                        }
+                    }
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White)
+                                .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
+                                .clickable {
+                                    Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT).show()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box {
+                                Icon(
+                                    Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = CampusPrimary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .align(Alignment.TopEnd)
+                                        .background(Color.Red, CircleShape)
+                                )
+                            }
+                        }
+                        
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White)
+                                .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
+                                .clickable { viewModel.logout() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ExitToApp,
+                                contentDescription = "Sign Out",
+                                tint = AlertError,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Unified clean title top bar for other tabs
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AccentBlueLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = when (activeTab) {
+                                    DashboardTab.Attendance -> Icons.Default.CalendarMonth
+                                    DashboardTab.Academics -> Icons.Default.MenuBook
+                                    DashboardTab.Payments -> Icons.Default.Payments
+                                    DashboardTab.AiChat -> Icons.Default.SmartToy
+                                    else -> Icons.Default.School
+                                },
+                                contentDescription = null,
+                                tint = CampusSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            "Campus ERP",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            text = when (activeTab) {
+                                DashboardTab.Attendance -> "Attendance Tracker"
+                                DashboardTab.Academics -> "Academics & Courses"
+                                DashboardTab.Payments -> "Tuition & Fees"
+                                DashboardTab.AiChat -> "Campus AI Assistant"
+                                else -> "Campus ERP"
+                            },
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = CampusPrimary
                         )
                     }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.logout() }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Sign Out", tint = MaterialTheme.colorScheme.error)
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White)
+                            .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(10.dp))
+                            .clickable { viewModel.logout() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.ExitToApp,
+                            contentDescription = "Sign Out",
+                            tint = AlertError,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-                )
-            )
+                }
+            }
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+                modifier = Modifier
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .navigationBarsPadding()
+            ) {
                 NavigationBarItem(
                     selected = activeTab == DashboardTab.Home,
                     onClick = { activeTab = DashboardTab.Home },
                     icon = { Icon(if (activeTab == DashboardTab.Home) Icons.Filled.Dashboard else Icons.Outlined.Dashboard, contentDescription = "Home") },
-                    label = { Text("Dashboard", fontSize = 11.sp) }
+                    label = { Text("Dashboard", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CampusPrimary,
+                        selectedTextColor = CampusPrimary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = AccentBlueLight
+                    )
                 )
                 NavigationBarItem(
                     selected = activeTab == DashboardTab.Attendance,
                     onClick = { activeTab = DashboardTab.Attendance },
                     icon = { Icon(if (activeTab == DashboardTab.Attendance) Icons.Filled.CalendarMonth else Icons.Outlined.CalendarMonth, contentDescription = "Attendance") },
-                    label = { Text("Attendance", fontSize = 11.sp) }
+                    label = { Text("Attendance", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CampusPrimary,
+                        selectedTextColor = CampusPrimary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = AccentBlueLight
+                    )
                 )
                 NavigationBarItem(
                     selected = activeTab == DashboardTab.Academics,
                     onClick = { activeTab = DashboardTab.Academics },
                     icon = { Icon(if (activeTab == DashboardTab.Academics) Icons.Filled.MenuBook else Icons.Outlined.MenuBook, contentDescription = "Academics") },
-                    label = { Text("Academics", fontSize = 11.sp) }
+                    label = { Text("Academics", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CampusPrimary,
+                        selectedTextColor = CampusPrimary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = AccentBlueLight
+                    )
                 )
                 NavigationBarItem(
                     selected = activeTab == DashboardTab.Payments,
                     onClick = { activeTab = DashboardTab.Payments },
                     icon = { Icon(if (activeTab == DashboardTab.Payments) Icons.Filled.Payments else Icons.Outlined.Payments, contentDescription = "Fees") },
-                    label = { Text("Payments", fontSize = 11.sp) }
+                    label = { Text("Payments", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CampusPrimary,
+                        selectedTextColor = CampusPrimary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = AccentBlueLight
+                    )
                 )
                 NavigationBarItem(
                     selected = activeTab == DashboardTab.AiChat,
                     onClick = { activeTab = DashboardTab.AiChat },
                     icon = { Icon(if (activeTab == DashboardTab.AiChat) Icons.Filled.SmartToy else Icons.Outlined.SmartToy, contentDescription = "Campus AI") },
-                    label = { Text("CampusAI", fontSize = 11.sp) }
+                    label = { Text("CampusAI", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CampusPrimary,
+                        selectedTextColor = CampusPrimary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = AccentBlueLight
+                    )
                 )
             }
         }
@@ -454,54 +625,152 @@ fun TabHome(viewModel: CampusViewModel) {
     ) {
         item { Spacer(modifier = Modifier.height(16.dp)) }
 
-        // Hero Profile Header Card
+        // Hero Profile Header Card styled as "Quick Insights"
         item {
             profile?.let { p ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(32.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = CampusPrimary
                     )
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .drawBehind {
+                                // Draw ambient blue glowing circles
+                                drawCircle(
+                                    color = Color(0x223B82F6),
+                                    radius = 240f,
+                                    center = Offset(size.width + 40f, -40f)
+                                )
+                            }
                             .padding(24.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Custom vector icon placeholder
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Face,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = p.name,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "${p.branch} • Sem ${p.semester}",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                            Text(
-                                text = "Roll: ${p.rollNumber}",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f)
-                            )
+                        Column {
+                            // Top Row: Attendance & Status Badge
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "ATTENDANCE",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF93C5FD),
+                                        letterSpacing = 1.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.Bottom) {
+                                        Text(
+                                            text = p.attendancePercentage.toString(),
+                                            fontSize = 42.sp,
+                                            fontWeight = FontWeight.Light,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = "%",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF93C5FD),
+                                            modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
+                                        )
+                                    }
+                                }
+                                
+                                // Status badge
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color.White.copy(alpha = 0.15f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = if (p.attendancePercentage >= 75) "Good Standing" else "Ineligible",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(20.dp))
+                            
+                            // Bottom Grid: CGPA & Branch info
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // CGPA Card
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "CURRENT CGPA",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF93C5FD).copy(alpha = 0.7f),
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = p.cgpa.toString(),
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "↑0.2",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = Color(0xFF60A5FA)
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                // Semester Card
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "SEMESTER / BRANCH",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF93C5FD).copy(alpha = 0.7f),
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Sem ${p.semester} • ${p.branch}",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -514,10 +783,11 @@ fun TabHome(viewModel: CampusViewModel) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
+                    containerColor = Color.White
+                ),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Row(
                     modifier = Modifier
@@ -537,181 +807,274 @@ fun TabHome(viewModel: CampusViewModel) {
                             text = "$greeting, Aarav",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            color = CampusPrimary
                         )
                         Text(
                             text = "Bengaluru Campus Hub • Today is clear",
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = Color.Gray
                         )
                     }
                     Text(
                         text = "78°F",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = CampusSecondary
                     )
                 }
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(8.dp)) }
 
-        // Quick Stats Rings (CGPA & Attendance)
+        // Today's Schedule (Upcoming Class Card)
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
-                profile?.let { p ->
-                    // Stat 1: CGPA
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("Current CGPA", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(
-                                    progress = (p.cgpa / 10.0).toFloat(),
-                                    modifier = Modifier.size(64.dp),
-                                    color = CampusSecondary,
-                                    strokeWidth = 6.dp
-                                )
-                                Text(
-                                    text = p.cgpa.toString(),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
+                Text(
+                    text = "Upcoming Class",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = CampusPrimary
+                )
+                Text(
+                    text = "View Timetable",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color(0xFF2563EB),
+                    modifier = Modifier.clickable {
+                        Toast.makeText(context, "Explore schedule below", Toast.LENGTH_SHORT).show()
                     }
+                )
+            }
+        }
 
-                    // Stat 2: Attendance
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
+        // Upcoming Class Card
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        Toast.makeText(context, "Class details: Advanced Data Structures in Room 402B", Toast.LENGTH_SHORT).show()
+                    },
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Time Box
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFFEEF2FF))
+                            .border(1.dp, Color(0xFFE0E7FF), RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("Overall Attendance", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(
-                                    progress = (p.attendancePercentage / 100.0).toFloat(),
-                                    modifier = Modifier.size(64.dp),
-                                    color = if (p.attendancePercentage >= 75) CampusPrimary else AlertWarning,
-                                    strokeWidth = 6.dp
-                                )
-                                Text(
-                                    text = "${p.attendancePercentage}%",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "10:30",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF4F46E5)
+                            )
+                            Text(
+                                text = "AM",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp,
+                                color = Color(0xFF818CF8)
+                            )
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Class Details
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Advanced Data Structures",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = CampusOnSurface
+                        )
+                        Text(
+                            text = "Prof. S. Iyer • Room 402B",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    
+                    // Divider line
+                    Box(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .width(1.dp)
+                            .background(Color(0xFFF1F5F9))
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // Map Pin Icon
+                    Text(
+                        text = "📍",
+                        fontSize = 20.sp
+                    )
                 }
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(12.dp)) }
 
         // Section Title: Quick Actions
         item {
             Text(
-                text = "Quick Campus Actions",
+                text = "Quick Actions",
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 10.dp)
+                fontSize = 18.sp,
+                color = CampusPrimary,
+                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
             )
         }
 
-        // Quick actions Grid
+        // Quick actions Grid matching the Modules grid from mockup
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Action 1: QR Check-In
-                Card(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showQrDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(ColorAcademics),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = CampusSecondary, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("QR Class In", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "QR Class In",
+                            tint = Color(0xFF5B21B6),
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "QR CHECK-IN",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 // Action 2: Raise Ticket
-                Card(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showTicketDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(ColorPayments),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.SupportAgent, contentDescription = null, tint = CampusTertiary, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Helpdesk Ticket", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                        Icon(
+                            Icons.Default.SupportAgent,
+                            contentDescription = "Helpdesk",
+                            tint = Color(0xFF065F46),
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "SUPPORT",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 // Action 3: Hostel Menu
-                Card(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showHostelDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(ColorExams),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.HomeWork, contentDescription = null, tint = CampusPrimary, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Hostel Hub", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                        Icon(
+                            Icons.Default.HomeWork,
+                            contentDescription = "Hostel Hub",
+                            tint = Color(0xFF991B1B),
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "HOSTEL HUB",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 // Action 4: Shuttle Tracker
-                Card(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showTransportDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(ColorTransport),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = AlertSuccess, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Bus Tracker", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                        Icon(
+                            Icons.Default.DirectionsBus,
+                            contentDescription = "Bus Tracker",
+                            tint = Color(0xFF075985),
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "SHUTTLE",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -723,21 +1086,22 @@ fun TabHome(viewModel: CampusViewModel) {
             Text(
                 text = "Campus Circulars & Events",
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 10.dp)
+                fontSize = 18.sp,
+                color = CampusPrimary,
+                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
             )
         }
 
-        // Circular feeds items
+        // Circular feeds items with minimalist list cards
         items(circulars) { c ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 5.dp)
                     .clickable { showCircularDialog = c },
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -746,14 +1110,14 @@ fun TabHome(viewModel: CampusViewModel) {
                     Box(
                         modifier = Modifier
                             .size(44.dp)
+                            .clip(CircleShape)
                             .background(
                                 when (c.category) {
-                                    "Notice" -> AlertInfo.copy(alpha = 0.1f)
-                                    "Placement" -> AlertSuccess.copy(alpha = 0.1f)
-                                    "Event" -> CampusTertiary.copy(alpha = 0.1f)
-                                    else -> CampusPrimary.copy(alpha = 0.1f)
-                                },
-                                CircleShape
+                                    "Notice" -> ColorAcademics
+                                    "Placement" -> ColorPayments
+                                    "Event" -> ColorEvents
+                                    else -> ColorTransport
+                                }
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -766,10 +1130,10 @@ fun TabHome(viewModel: CampusViewModel) {
                             },
                             contentDescription = null,
                             tint = when (c.category) {
-                                "Notice" -> AlertInfo
-                                "Placement" -> AlertSuccess
-                                "Event" -> CampusTertiary
-                                else -> CampusPrimary
+                                "Notice" -> Color(0xFF5B21B6)
+                                "Placement" -> Color(0xFF065F46)
+                                "Event" -> Color(0xFF6B21A8)
+                                else -> Color(0xFF075985)
                             }
                         )
                     }
@@ -781,7 +1145,8 @@ fun TabHome(viewModel: CampusViewModel) {
                         Text(
                             text = "${c.publisher} • Just Now",
                             fontSize = 9.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            fontWeight = FontWeight.Bold,
+                            color = CampusSecondary
                         )
                     }
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
@@ -1085,18 +1450,20 @@ fun TabAttendance(viewModel: CampusViewModel) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         "Subject Attendance Analytics",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
                         color = CampusPrimary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Draw a custom Bar Chart for each subject
+                    // Draw a custom Bar Chart for each subject with beautiful rounded rects
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1108,24 +1475,28 @@ fun TabAttendance(viewModel: CampusViewModel) {
                             val attendanceRate = if (sub.totalClasses > 0) sub.attendanceCount.toFloat() / sub.totalClasses else 0f
                             val barHeight = size.height * 0.75f * attendanceRate
 
-                            // Draw background bar track
-                            drawRect(
-                                color = Color.LightGray.copy(alpha = 0.3f),
-                                topLeft = Offset(xPos - 15f, size.height * 0.1f),
-                                size = androidx.compose.ui.geometry.Size(30f, size.height * 0.75f)
+                            // Draw background bar track with rounded corner
+                            drawRoundRect(
+                                color = Color(0xFFF1F5F9),
+                                topLeft = Offset(xPos - 12f, size.height * 0.1f),
+                                size = androidx.compose.ui.geometry.Size(24f, size.height * 0.75f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f)
                             )
 
-                            // Draw filled attendance bar
-                            drawRect(
-                                color = if (attendanceRate >= 0.75f) CampusPrimary else AlertWarning,
-                                topLeft = Offset(xPos - 15f, size.height * 0.85f - barHeight),
-                                size = androidx.compose.ui.geometry.Size(30f, barHeight)
-                            )
+                            // Draw filled attendance bar with rounded corner
+                            if (barHeight > 0f) {
+                                drawRoundRect(
+                                    color = if (attendanceRate >= 0.75f) CampusSecondary else AlertWarning,
+                                    topLeft = Offset(xPos - 12f, size.height * 0.85f - barHeight),
+                                    size = androidx.compose.ui.geometry.Size(24f, barHeight),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f)
+                                )
+                            }
                         }
 
                         // Drawing baseline
                         drawLine(
-                            color = Color.LightGray,
+                            color = Color(0xFFE2E8F0),
                             start = Offset(0f, size.height * 0.85f),
                             end = Offset(size.width, size.height * 0.85f),
                             strokeWidth = 2f
@@ -1136,11 +1507,11 @@ fun TabAttendance(viewModel: CampusViewModel) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .padding(top = 12.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         subjects.forEach { s ->
-                            Text(s.code, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = CampusPrimary)
+                            Text(s.code, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                         }
                     }
                 }
@@ -1154,9 +1525,9 @@ fun TabAttendance(viewModel: CampusViewModel) {
             Text(
                 "Course Logs & Stats",
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 color = CampusPrimary,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
 
@@ -1167,9 +1538,10 @@ fun TabAttendance(viewModel: CampusViewModel) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    .padding(vertical = 5.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -1197,7 +1569,8 @@ fun TabAttendance(viewModel: CampusViewModel) {
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp)),
-                        color = if (isWarning) AlertError else CampusSecondary
+                        color = if (isWarning) AlertError else CampusSecondary,
+                        trackColor = Color(0xFFF1F5F9)
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1239,9 +1612,9 @@ fun TabAttendance(viewModel: CampusViewModel) {
             Text(
                 "Daily Check-In History",
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 color = CampusPrimary,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
 
@@ -1250,18 +1623,20 @@ fun TabAttendance(viewModel: CampusViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(log.subjectName, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        Text("${log.subjectCode} • ${log.date}", fontSize = 10.sp, color = Color.Gray)
-                        Text(log.remarks, fontSize = 10.sp, color = CampusPrimary)
+                        Text(log.subjectName, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("${log.subjectCode} • ${log.date}", fontSize = 11.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(log.remarks, fontSize = 11.sp, color = CampusPrimary, fontWeight = FontWeight.Medium)
                     }
                     Box(
                         modifier = Modifier
