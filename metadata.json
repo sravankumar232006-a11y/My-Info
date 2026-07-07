@@ -1,0 +1,6 @@
+{
+  "name": "Campus ERP",
+  "description": "Enterprise-grade College Student ERP Mobile Application with attendance tracking, academics, schedules, payment portal, and an AI Hub Assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
