@@ -48,6 +48,7 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodel.CampusViewModel
 import com.example.ui.viewmodel.ChatMessage
 import com.example.ui.viewmodel.PaymentReceipt
+import com.airbnb.lottie.compose.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -96,26 +97,22 @@ fun CampusAppUI(viewModel: CampusViewModel) {
 
 @Composable
 fun SplashScreen(onTimeout: () -> Unit) {
-    val scale = remember { Animatable(0.6f) }
-    val alpha = remember { Animatable(0f) }
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.splash_animation))
+    val progress by animateLottieCompositionAsState(
+        composition = composition,
+        iterations = 1,
+        restartOnPlay = false
+    )
 
+    LaunchedEffect(progress) {
+        if (progress == 1.0f) {
+            onTimeout()
+        }
+    }
+
+    // Safety timeout in case Lottie fails to load
     LaunchedEffect(Unit) {
-        launch {
-            scale.animateTo(
-                targetValue = 1.0f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
-        }
-        launch {
-            alpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(1000)
-            )
-        }
-        delay(2200) // Aesthetic visual pause
+        delay(3500)
         onTimeout()
     }
 
@@ -130,19 +127,29 @@ fun SplashScreen(onTimeout: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(24.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.img_campus_logo),
-                contentDescription = "Campus ERP Logo",
-                modifier = Modifier
-                    .size(160.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(32.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box(
+                modifier = Modifier.size(240.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                LottieAnimation(
+                    composition = composition,
+                    progress = { progress },
+                    modifier = Modifier.fillMaxSize()
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.img_campus_logo),
+                    contentDescription = "Campus ERP Logo",
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "CAMPUS ERP",
-                fontSize = 28.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = CampusPrimary,
                 letterSpacing = 4.sp
@@ -153,12 +160,6 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 fontSize = 14.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(48.dp))
-            CircularProgressIndicator(
-                color = CampusSecondary,
-                strokeWidth = 3.dp,
-                modifier = Modifier.size(36.dp)
             )
         }
     }
@@ -175,6 +176,15 @@ fun LoginScreen(viewModel: CampusViewModel) {
     var showHelpDialog by remember { mutableStateOf(false) }
     val loginError by viewModel.loginError.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    var showGoogleSelector by remember { mutableStateOf(false) }
+    var showPhoneAuthFlow by remember { mutableStateOf(false) }
+    var phoneStep by remember { mutableIntStateOf(1) } // 1: input, 2: OTP, 3: Register name
+    var phoneNumber by remember { mutableStateOf("") }
+    var otpCode by remember { mutableStateOf("") }
+    var generatedOtp by remember { mutableStateOf("") }
+    var registerName by remember { mutableStateOf("") }
+    var registerEmail by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -294,26 +304,425 @@ fun LoginScreen(viewModel: CampusViewModel) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Fingerprint/Biometric quick scan simulator button
-                IconButton(
+                // Custom Google Sign-In button
+                OutlinedButton(
+                    onClick = { showGoogleSelector = true },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier.size(24.dp).padding(end = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                drawArc(Color(0xFFEA4335), 180f, 90f, true) // Red
+                                drawArc(Color(0xFFFBBC05), 90f, 90f, true)  // Yellow
+                                drawArc(Color(0xFF34A853), 0f, 90f, true)   // Green
+                                drawArc(Color(0xFF4285F4), 270f, 90f, true) // Blue
+                            }
+                        }
+                        Text(
+                            text = "Continue with Google",
+                            color = Color(0xFF1E293B),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Phone Auth button
+                OutlinedButton(
                     onClick = {
+                        showPhoneAuthFlow = true
+                        phoneStep = 1
+                        phoneNumber = ""
+                        otpCode = ""
+                        registerName = ""
+                        registerEmail = ""
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                ) {
+                    Icon(
+                        Icons.Default.PhoneAndroid,
+                        contentDescription = null,
+                        tint = CampusPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Sign in with Phone Number",
+                        color = Color(0xFF1E293B),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
                         Toast.makeText(context, "Scanning fingerprint...", Toast.LENGTH_SHORT).show()
                         viewModel.loginUser("IIT-2024-042", "1234", true)
-                    },
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
-                            CircleShape
-                        )
-                        .border(1.dp, MaterialTheme.colorScheme.secondary, CircleShape)
+                    }
                 ) {
                     Icon(
                         Icons.Default.Fingerprint,
-                        contentDescription = "Scan Biometrics",
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(36.dp)
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(16.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Instant Biometric Unlock",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+
+    if (showGoogleSelector) {
+        Dialog(onDismissRequest = { showGoogleSelector = false }) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            modifier = Modifier.size(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                drawArc(Color(0xFFEA4335), 180f, 90f, true)
+                                drawArc(Color(0xFFFBBC05), 90f, 90f, true)
+                                drawArc(Color(0xFF34A853), 0f, 90f, true)
+                                drawArc(Color(0xFF4285F4), 270f, 90f, true)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Google",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color(0xFF1E293B)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Choose an account",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "to continue to Campus ERP Sandbox",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    val googleAccounts = listOf(
+                        Triple("Sravan Kumar", "sravankumar232006@gmail.com", "S"),
+                        Triple("Aarav Sharma", "aarav.sharma@campus.edu", "A"),
+                        Triple("Guest Student", "guest.student@gmail.com", "G")
+                    )
+
+                    googleAccounts.forEach { (name, email, initial) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showGoogleSelector = false
+                                    Toast.makeText(context, "Signing in with $email...", Toast.LENGTH_SHORT).show()
+                                    viewModel.loginWithCustomUser(name, email, "+1 (555) 234-5678")
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(CampusPrimary.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initial,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CampusPrimary,
+                                    fontSize = 16.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF1E293B)
+                                )
+                                Text(
+                                    text = email,
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        Divider(color = Color(0xFFF1F5F9))
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                Toast.makeText(context, "Google Play Services integration simulation.", Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(24.dp).padding(start = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Text(
+                            text = "Add another account",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            color = Color(0xFF475569)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "To continue, Google will share your name, email address, language preference, and profile picture with Campus ERP.",
+                        fontSize = 10.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    if (showPhoneAuthFlow) {
+        Dialog(onDismissRequest = { showPhoneAuthFlow = false }) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Secure Phone Login",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = CampusPrimary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    when (phoneStep) {
+                        1 -> {
+                            Text(
+                                text = "Enter your mobile number to sign in or create a student portal account.",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = phoneNumber,
+                                onValueChange = { phoneNumber = it.filter { char -> char.isDigit() } },
+                                label = { Text("Mobile Number") },
+                                placeholder = { Text("98765 43210") },
+                                leadingIcon = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(start = 12.dp, end = 8.dp)
+                                    ) {
+                                        Text("+91", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Divider(modifier = Modifier.height(16.dp).width(1.dp), color = Color.LightGray)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (phoneNumber.length == 10) {
+                                        generatedOtp = String.format("%04d", (1000..9999).random())
+                                        phoneStep = 2
+                                        Toast.makeText(context, "OTP Sent Successfully!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Please enter a valid 10-digit mobile number.", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Send OTP Verification", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        2 -> {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = CampusPrimary.copy(alpha = 0.05f)),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = CampusPrimary, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Simulated SMS OTP: $generatedOtp",
+                                        fontWeight = FontWeight.Bold,
+                                        color = CampusPrimary,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "Enter the 4-digit verification code sent to +91 $phoneNumber.",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = otpCode,
+                                onValueChange = { otpCode = it.filter { char -> char.isDigit() }.take(4) },
+                                label = { Text("Enter OTP Code") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = { Text("XXXX") }
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (otpCode == generatedOtp) {
+                                        if (phoneNumber == "9876543210") {
+                                            viewModel.loginWithCustomUser("Aarav Sharma", "aarav.sharma@campus.edu", "+91 $phoneNumber")
+                                            showPhoneAuthFlow = false
+                                        } else {
+                                            phoneStep = 3
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Invalid OTP code. Try $generatedOtp", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Verify & Continue", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        3 -> {
+                            Text(
+                                text = "Register New Student Account",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "Provide your details to complete ERP onboarding.",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = registerName,
+                                onValueChange = { registerName = it },
+                                label = { Text("Full Name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = registerEmail,
+                                onValueChange = { registerEmail = it },
+                                label = { Text("Email Address") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    if (registerName.isNotBlank() && registerEmail.isNotBlank()) {
+                                        viewModel.loginWithCustomUser(
+                                            name = registerName.trim(),
+                                            email = registerEmail.trim(),
+                                            phone = "+91 $phoneNumber"
+                                        )
+                                        showPhoneAuthFlow = false
+                                        Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "All fields are required.", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Complete Registration", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    TextButton(onClick = { showPhoneAuthFlow = false }) {
+                        Text("Cancel", color = Color.Gray)
+                    }
                 }
             }
         }
@@ -347,6 +756,7 @@ fun LoginScreen(viewModel: CampusViewModel) {
 fun MainDashboardContainer(viewModel: CampusViewModel) {
     var activeTab by remember { mutableStateOf(DashboardTab.Home) }
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Scaffold(
@@ -399,13 +809,31 @@ fun MainDashboardContainer(viewModel: CampusViewModel) {
                         }
                     }
                     
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // Light/Dark mode manual override toggle
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White)
-                                .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                .clickable { viewModel.toggleDarkMode() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle Theme",
+                                tint = CampusPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                                    .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                                 .clickable {
                                     Toast.makeText(context, "No new notifications", Toast.LENGTH_SHORT).show()
                                 },
@@ -431,8 +859,8 @@ fun MainDashboardContainer(viewModel: CampusViewModel) {
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White)
-                                .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                                 .clickable { viewModel.logout() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -492,21 +920,41 @@ fun MainDashboardContainer(viewModel: CampusViewModel) {
                         )
                     }
                     
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(10.dp))
-                            .clickable { viewModel.logout() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.ExitToApp,
-                            contentDescription = "Sign Out",
-                            tint = AlertError,
-                            modifier = Modifier.size(18.dp)
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // Light/Dark mode manual override toggle
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                .clickable { viewModel.toggleDarkMode() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle Theme",
+                                tint = CampusPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                .clickable { viewModel.logout() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ExitToApp,
+                                contentDescription = "Sign Out",
+                                tint = AlertError,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1899,7 +2347,7 @@ fun TabPayments(viewModel: CampusViewModel) {
     val scope = rememberCoroutineScope()
 
     var activePaymentPurpose by remember { mutableStateOf("Tuition Semester 5") }
-    var inputAmountToPay by remember { mutableStateOf("800") }
+    var inputAmountToPay by remember { mutableStateOf("30000") }
     var showGatewayDialog by remember { mutableStateOf(false) }
     var showReceiptDetails by remember { mutableStateOf<PaymentReceipt?>(null) }
     var isPayingSimulation by remember { mutableStateOf(false) }
@@ -1934,12 +2382,12 @@ fun TabPayments(viewModel: CampusViewModel) {
                     ) {
                         Column {
                             Text("Total Tuition", fontSize = 11.sp, color = Color.Gray)
-                            Text("$${"%,.2f".format(totalTuition)}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = CampusPrimary)
+                            Text("₹${"%,.0f".format(totalTuition)}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = CampusPrimary)
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text("Pending Balance", fontSize = 11.sp, color = Color.Gray)
                             Text(
-                                if (due > 0) "$${"%,.2f".format(due)}" else "Fully Paid! 🎉",
+                                if (due > 0) "₹${"%,.0f".format(due)}" else "Fully Paid! 🎉",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (due > 0) AlertError else AlertSuccess
@@ -1960,7 +2408,7 @@ fun TabPayments(viewModel: CampusViewModel) {
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "${(rate * 100).toInt()}% of fee paid ($${"%,.2f".format(tuitionPaid)} / $${"%,.2f".format(totalTuition)})",
+                        "${(rate * 100).toInt()}% of fee paid (₹${"%,.0f".format(tuitionPaid)} / ₹${"%,.0f".format(totalTuition)})",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
@@ -1995,7 +2443,7 @@ fun TabPayments(viewModel: CampusViewModel) {
                         OutlinedTextField(
                             value = inputAmountToPay,
                             onValueChange = { inputAmountToPay = it },
-                            label = { Text("Amount ($)") },
+                            label = { Text("Amount (₹)") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -2008,7 +2456,7 @@ fun TabPayments(viewModel: CampusViewModel) {
                                 if (cleanAmt != null && cleanAmt > 0 && cleanAmt <= due) {
                                     showGatewayDialog = true
                                 } else {
-                                    Toast.makeText(context, "Please enter a valid amount (Max: $due)", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Please enter a valid amount (Max: ₹$due)", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -2016,7 +2464,7 @@ fun TabPayments(viewModel: CampusViewModel) {
                         ) {
                             Icon(Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Proceed to Gateway ($$inputAmountToPay)")
+                            Text("Proceed to Gateway (₹$inputAmountToPay)")
                         }
                     }
                 }
@@ -2062,7 +2510,7 @@ fun TabPayments(viewModel: CampusViewModel) {
                         Text("Paid via: ${rec.method}", fontSize = 10.sp, color = CampusPrimary)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("$${"%,.2f".format(rec.amount)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CampusSecondary)
+                        Text("₹${"%,.0f".format(rec.amount)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CampusSecondary)
                         Box(
                             modifier = Modifier
                                 .background(AlertSuccess.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
@@ -2083,7 +2531,7 @@ fun TabPayments(viewModel: CampusViewModel) {
         var cardNo by remember { mutableStateOf("4111 2222 3333 4444") }
         var cardExpiry by remember { mutableStateOf("12/29") }
         var cardCvv by remember { mutableStateOf("123") }
-        var currentMethod by remember { mutableStateOf("Card") }
+        var currentMethod by remember { mutableStateOf("Razorpay") }
 
         Dialog(onDismissRequest = { if (!isPayingSimulation) showGatewayDialog = false }) {
             Card(shape = RoundedCornerShape(24.dp), modifier = Modifier.padding(16.dp)) {
@@ -2092,27 +2540,64 @@ fun TabPayments(viewModel: CampusViewModel) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("Campus Pay Gateway", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = CampusPrimary)
-                    Text("Amount to Pay: $$inputAmountToPay", fontSize = 12.sp, color = Color.Gray)
+                    Text("Amount to Pay: ₹$inputAmountToPay", fontSize = 12.sp, color = Color.Gray)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         FilterChip(
+                            selected = currentMethod == "Razorpay",
+                            onClick = { currentMethod = "Razorpay" },
+                            label = { Text("Razorpay SDK", fontSize = 11.sp) },
+                            modifier = Modifier.weight(1.2f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        FilterChip(
                             selected = currentMethod == "Card",
                             onClick = { currentMethod = "Card" },
-                            label = { Text("Debit/Credit Card", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
+                            label = { Text("Card", fontSize = 11.sp) },
+                            modifier = Modifier.weight(0.8f)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         FilterChip(
                             selected = currentMethod == "UPI",
                             onClick = { currentMethod = "UPI" },
-                            label = { Text("UPI Scan", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
+                            label = { Text("UPI", fontSize = 11.sp) },
+                            modifier = Modifier.weight(0.8f)
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    if (currentMethod == "Card") {
+                    if (currentMethod == "Razorpay") {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = CampusPrimary.copy(alpha = 0.05f)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, CampusPrimary.copy(alpha = 0.1f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_campus_logo),
+                                    contentDescription = "Razorpay Logo",
+                                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "SECURE RAZORPAY GATEWAY",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    color = CampusPrimary,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = "Includes native payment flows, credit/debit card forms, netbanking, and UPI directly powered by Razorpay.",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    } else if (currentMethod == "Card") {
                         OutlinedTextField(
                             value = cardNo,
                             onValueChange = { cardNo = it },
@@ -2157,20 +2642,31 @@ fun TabPayments(viewModel: CampusViewModel) {
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(onClick = {
-                                isPayingSimulation = true
-                                scope.launch {
-                                    delay(2000)
-                                    viewModel.makePayment(
-                                        amount = inputAmountToPay.toDoubleOrNull() ?: 0.0,
-                                        purpose = activePaymentPurpose,
-                                        method = currentMethod
-                                    )
-                                    isPayingSimulation = false
-                                    showGatewayDialog = false
-                                    Toast.makeText(context, "Payment Captured Successfully!", Toast.LENGTH_SHORT).show()
+                                if (currentMethod == "Razorpay") {
+                                    val amt = inputAmountToPay.toDoubleOrNull() ?: 0.0
+                                    val activity = context as? com.example.MainActivity
+                                    if (activity != null) {
+                                        activity.startRazorpayPayment(amt, activePaymentPurpose)
+                                        showGatewayDialog = false
+                                    } else {
+                                        Toast.makeText(context, "Error: Payment Activity unavailable.", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    isPayingSimulation = true
+                                    scope.launch {
+                                        delay(2000)
+                                        viewModel.makePayment(
+                                            amount = inputAmountToPay.toDoubleOrNull() ?: 0.0,
+                                            purpose = activePaymentPurpose,
+                                            method = currentMethod
+                                        )
+                                        isPayingSimulation = false
+                                        showGatewayDialog = false
+                                        Toast.makeText(context, "Payment Captured Successfully!", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }) {
-                                Text("Pay Securely")
+                                Text(if (currentMethod == "Razorpay") "Launch Razorpay" else "Pay Securely")
                             }
                         }
                     }
@@ -2216,7 +2712,7 @@ fun TabPayments(viewModel: CampusViewModel) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text("Amount Paid", fontSize = 11.sp, color = Color.Gray)
-                    Text("$${"%,.2f".format(rec.amount)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = CampusSecondary)
+                    Text("₹${"%,.0f".format(rec.amount)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = CampusSecondary)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -2277,6 +2773,7 @@ fun TabAiChat(viewModel: CampusViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .imePadding()
     ) {
         // Chat History List
         Box(
